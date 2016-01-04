@@ -25,26 +25,26 @@ describe Sequel::Seed.environment do
   it 'should be possible to set the environment with Sequel::Seed.setup method' do
     Sequel::Seed.setup(:mock)
     expect(Sequel::Seed.environment).to eq :mock
-    Sequel::Seed.setup("test")
+    Sequel::Seed.setup('test')
     expect(Sequel::Seed.environment).to eq :test
   end
 
   it 'should be possible to set the environment with Sequel::Seed.environment= method' do
     Sequel::Seed.environment = :mock
     expect(Sequel::Seed.environment).to eq :mock
-    Sequel::Seed.environment = "test"
+    Sequel::Seed.environment = 'test'
     expect(Sequel::Seed.environment).to eq :test
   end
 end
 
 describe Sequel::Seed do
-  describe "to guarantee backward compatibility" do
-    it "should point Sequel::Seed.descendants to Sequel::Seed::Base.descendants" do
+  describe 'to guarantee backward compatibility' do
+    it 'should point Sequel::Seed.descendants to Sequel::Seed::Base.descendants' do
       Sequel::Seed::Base.descendants << 'hi'
       expect(Sequel::Seed.descendants).to contain_exactly('hi')
     end
 
-    it "should point Sequel::Seed.inherited() to Sequel::Seed::Base.inherited()" do
+    it 'should point Sequel::Seed.inherited() to Sequel::Seed::Base.inherited()' do
       Sequel::Seed::Base.inherited('1')
       Sequel::Seed.inherited('2')
       expect(Sequel::Seed.descendants).to contain_exactly('1', '2')
@@ -53,19 +53,19 @@ describe Sequel::Seed do
 end
 
 describe Sequel::Seeder do
-  let(:DB) {Sequel.sqlite}
-  let!(:environment) {"#{Faker::Lorem.word}_#{Faker::Lorem.word}"}
-  let!(:random_word) {Faker::Lorem.word}
+  let(:DB) { Sequel.sqlite }
+  let!(:environment) { "#{Faker::Lorem.word}_#{Faker::Lorem.word}" }
+  let!(:random_word) { Faker::Lorem.word }
 
-  it "should raise an error when there is not any seed file to apply" do
+  it 'should raise an error when there is not any seed file to apply' do
     Sequel::Seed.setup environment
 
     expect(Sequel::Seed::Base.descendants.length).to be 0
-    expect {Sequel::Seeder.apply(DB, '/')}.to raise_error("seeder not available for files; please checked the directory")
+    expect { Sequel::Seeder.apply(DB, '/') }.to raise_error('seeder not available for files; please checked the directory')
     expect(SpecModel.dataset.all.length).to be 0
   end
 
-  describe "Seeds defined using Ruby code (.rb extension)" do
+  describe 'Seeds defined using Ruby code (.rb extension)' do
     describe 'environment references should be indistinguishable between Symbol and String' do
       context 'when the environment is defined using a String' do
         it 'should apply the Seed accordingly' do
@@ -81,7 +81,7 @@ describe Sequel::Seeder do
 
           expect(Sequel::Seed::Base.descendants.length).to be 0
           expect(Sequel::Seeder.seeder_class(seed_test_dir)).to be Sequel::TimestampSeeder
-          expect {Sequel::Seeder.apply(DB, seed_test_dir)}.not_to raise_error
+          expect { Sequel::Seeder.apply(DB, seed_test_dir) }.not_to raise_error
           expect(Sequel::Seed::Base.descendants.length).to be 1
           expect(SpecModel.dataset.all.length).to be 1
           expect(SpecModel.dataset.first.sentence).to eq 'environment defined by String'
@@ -101,7 +101,7 @@ describe Sequel::Seeder do
           end
 
           expect(Sequel::Seed::Base.descendants.length).to be 0
-          expect {Sequel::Seeder.apply(DB, seed_test_dir)}.not_to raise_error
+          expect { Sequel::Seeder.apply(DB, seed_test_dir) }.not_to raise_error
           expect(Sequel::Seed::Base.descendants.length).to be 1
           expect(SpecModel.dataset.all.length).to be 1
           expect(SpecModel.dataset.first.sentence).to eq 'Seed defined by String'
@@ -121,7 +121,7 @@ describe Sequel::Seeder do
           end
 
           expect(Sequel::Seed::Base.descendants.length).to be 0
-          expect {Sequel::Seeder.apply(DB, seed_test_dir)}.not_to raise_error
+          expect { Sequel::Seeder.apply(DB, seed_test_dir) }.not_to raise_error
           expect(Sequel::Seed::Base.descendants.length).to be 1
           expect(SpecModel.dataset.all.length).to be 1
           expect(SpecModel.dataset.first.sentence).to eq 'Seed and environment defined by String'
@@ -141,7 +141,7 @@ describe Sequel::Seeder do
           end
 
           expect(Sequel::Seed::Base.descendants.length).to be 0
-          expect {Sequel::Seeder.apply(DB, seed_test_dir)}.not_to raise_error
+          expect { Sequel::Seeder.apply(DB, seed_test_dir) }.not_to raise_error
           expect(Sequel::Seed::Base.descendants.length).to be 1
           expect(SpecModel.dataset.all.length).to be 1
           expect(SpecModel.dataset.first.sentence).to eq 'Seed and environment defined by Symbol'
@@ -161,7 +161,7 @@ describe Sequel::Seeder do
           end
 
           expect(Sequel::Seed::Base.descendants.length).to be 0
-          expect {Sequel::Seeder.apply(DB, seed_test_dir)}.not_to raise_error
+          expect { Sequel::Seeder.apply(DB, seed_test_dir) }.not_to raise_error
           expect(Sequel::Seed::Base.descendants.length).to be 1
           expect(SpecModel.dataset.all.length).to be 1
           expect(SpecModel.dataset.first.sentence).to eq 'Wildcard Seed and environment defined by String'
@@ -182,12 +182,12 @@ describe Sequel::Seeder do
         end
 
         expect(Sequel::Seed::Base.descendants.length).to be 0
-        expect {Sequel::Seeder.apply(DB, seed_test_dir)}.not_to raise_error
+        expect { Sequel::Seeder.apply(DB, seed_test_dir) }.not_to raise_error
         expect(Sequel::Seed::Base.descendants.length).to be 1
         expect(SpecModel.dataset.all.length).to be 1
         expect(SpecModel.dataset.first.sentence).to eq 'should have changed (from Ruby file)'
         # Once again
-        expect {Sequel::Seeder.apply(DB, seed_test_dir)}.not_to raise_error
+        expect { Sequel::Seeder.apply(DB, seed_test_dir) }.not_to raise_error
         expect(Sequel::Seed::Base.descendants.length).to be 0
         expect(SpecModel.dataset.all.length).to be 1
         expect(SpecModel.dataset.first.sentence).to eq 'should have changed (from Ruby file)'
@@ -207,7 +207,7 @@ describe Sequel::Seeder do
         end
 
         expect(Sequel::Seed::Base.descendants.length).to be 0
-        expect {Sequel::Seeder.apply(DB, seed_test_dir)}.not_to raise_error
+        expect { Sequel::Seeder.apply(DB, seed_test_dir) }.not_to raise_error
         expect(SpecModel.dataset.all.length).to be 0
       end
     end
@@ -225,7 +225,7 @@ describe Sequel::Seeder do
       end
 
       expect(Sequel::Seed::Base.descendants.length).to be 0
-      expect {Sequel::Seeder.apply(DB, seed_test_dir)}.not_to raise_error
+      expect { Sequel::Seeder.apply(DB, seed_test_dir) }.not_to raise_error
       expect(Sequel::Seed::Base.descendants.length).to be 1
       expect(SpecModel.dataset.all.length).to be 1
       expect(SpecModel.dataset.first.sentence).to eq "should have changed (from YAML file) #{random_word}"
@@ -245,7 +245,7 @@ describe Sequel::Seeder do
       end
 
       expect(Sequel::Seed::Base.descendants.length).to be 0
-      expect {Sequel::Seeder.apply(DB, seed_test_dir)}.not_to raise_error
+      expect { Sequel::Seeder.apply(DB, seed_test_dir) }.not_to raise_error
       expect(Sequel::Seed::Base.descendants.length).to be 1
       expect(SpecModel.dataset.all.length).to be 1
       expect(SpecModel.dataset.first.sentence).to eq "should have changed (from YAML file) #{random_word}"
@@ -270,7 +270,7 @@ describe Sequel::Seeder do
       end
 
       expect(Sequel::Seed::Base.descendants.length).to be 0
-      expect {Sequel::Seeder.apply(DB, seed_test_dir)}.not_to raise_error
+      expect { Sequel::Seeder.apply(DB, seed_test_dir) }.not_to raise_error
       expect(Sequel::Seed::Base.descendants.length).to be 1
       expect(SpecModel.dataset.all.length).to be 1
       expect(SpecModel.dataset.first.sentence).to eq "should have changed (from YAML file) #{random_word}"
@@ -287,7 +287,7 @@ describe Sequel::Seeder do
       end
 
       expect(Sequel::Seed::Base.descendants.length).to be 0
-      expect {Sequel::Seeder.apply(DB, seed_test_dir)}.not_to raise_error
+      expect { Sequel::Seeder.apply(DB, seed_test_dir) }.not_to raise_error
       expect(Sequel::Seed::Base.descendants.length).to be 1
       expect(SpecModel.dataset.all.length).to be 0
     end
@@ -308,7 +308,7 @@ describe Sequel::Seeder do
       end
 
       expect(Sequel::Seed::Base.descendants.length).to be 0
-      expect {Sequel::Seeder.apply(DB, seed_test_dir)}.not_to raise_error
+      expect { Sequel::Seeder.apply(DB, seed_test_dir) }.not_to raise_error
       expect(Sequel::Seed::Base.descendants.length).to be 1
       expect(SpecModel.dataset.all.length).to be 1
       expect(SpecModel.dataset.first.sentence).to eq "should have changed (from JSON file) #{random_word}"
@@ -333,7 +333,7 @@ describe Sequel::Seeder do
       end
 
       expect(Sequel::Seed::Base.descendants.length).to be 0
-      expect {Sequel::Seeder.apply(DB, seed_test_dir)}.not_to raise_error
+      expect { Sequel::Seeder.apply(DB, seed_test_dir) }.not_to raise_error
       expect(Sequel::Seed::Base.descendants.length).to be 1
       expect(SpecModel.dataset.all.length).to be 1
       expect(SpecModel.dataset.first.sentence).to eq "should have changed (from JSON file) #{random_word}"
@@ -371,7 +371,7 @@ describe Sequel::Seeder do
       end
 
       expect(Sequel::Seed::Base.descendants.length).to be 0
-      expect {Sequel::Seeder.apply(DB, seed_test_dir)}.not_to raise_error
+      expect { Sequel::Seeder.apply(DB, seed_test_dir) }.not_to raise_error
       expect(Sequel::Seed::Base.descendants.length).to be 1
       expect(SpecModel.dataset.all.length).to be 1
       expect(SpecModel.dataset.first.sentence).to eq "should have changed (from JSON file) #{random_word}"
@@ -391,7 +391,7 @@ describe Sequel::Seeder do
       end
 
       expect(Sequel::Seed::Base.descendants.length).to be 0
-      expect {Sequel::Seeder.apply(DB, seed_test_dir)}.not_to raise_error
+      expect { Sequel::Seeder.apply(DB, seed_test_dir) }.not_to raise_error
       expect(Sequel::Seed::Base.descendants.length).to be 1
       expect(SpecModel.dataset.all.length).to be 0
     end

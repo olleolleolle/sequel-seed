@@ -44,7 +44,7 @@ module Sequel
     #   end
     #
 
-    def seed *env_labels, &block
+    def seed(*env_labels, &block)
       return if env_labels.length > 0 && !env_labels.map(&:to_sym).include?(Seed.environment)
 
       seed = Class.new(Seed::Base)
@@ -98,7 +98,7 @@ module Sequel
         def camelize(term, uppercase_first_letter = true)
           string = term.to_s
           if uppercase_first_letter
-            string.gsub(/\/(.?)/) { "::" + $1.upcase }.gsub(/(^|_)(.)/) { $2.upcase }
+            string.gsub(/\/(.?)/) { '::' + Regexp.last_match(1).upcase }.gsub(/(^|_)(.)/) { Regexp.last_match(2).upcase }
           else
             string.first + camelize(string)[1..-1]
           end
@@ -112,7 +112,7 @@ module Sequel
         when Hash
           apply_seed_hash(seed_descriptor)
         when Array
-          seed_descriptor.each {|seed_hash| apply_seed_hash(seed_hash)}
+          seed_descriptor.each { |seed_hash| apply_seed_hash(seed_hash) }
         end
       end
 
@@ -120,7 +120,7 @@ module Sequel
 
       def apply_seed_hash(seed_hash)
         return unless seed_hash.class <= Hash
-        if seed_hash.has_key?('environment')
+        if seed_hash.key?('environment')
           case seed_hash['environment']
           when String, Symbol
             return if seed_hash['environment'].to_sym != Seed.environment
@@ -134,16 +134,22 @@ module Sequel
         keys.each do |key|
           key_hash = seed_hash[key]
           entries = nil
-          class_name = if key_hash.has_key?('class')
-            entries = key_hash['entries']
-            key_hash['class']
-          else
-            Helpers.camelize(key)
+          class_name = if key_hash.respond_to?(:has_key?) && key_hash.key?('class')
+                         entries = key_hash['entries']
+                         key_hash['class']
+                       else
+                         Helpers.camelize(key)
           end
-          # It will raise an error if the class name is not defined
-          class_const = Kernel.const_get(class_name)
+
+          class_const = begin
+            Kernel.const_get(class_name)
+          rescue
+            $stderr.puts "Sequel::Seed will fail unless #{class_name} is defined before using it."
+            raise
+          end
+
           if entries
-            entries.each {|hash| create_model(class_const, hash)}
+            entries.each { |hash| create_model(class_const, hash) }
           else
             create_model(class_const, key_hash)
           end
@@ -153,9 +159,9 @@ module Sequel
       def create_model(class_const, hash)
         object_instance = class_const.new
         object_instance_attr = hash.each do |attr, value|
-          object_instance.set({attr.to_sym => value})
+          object_instance.set(attr.to_sym => value)
         end
-        raise(Error, "Attempt to create invalid model instance of #{class_name}") unless object_instance.valid?
+        fail(Error, "Attempt to create invalid model instance of #{class_name}") unless object_instance.valid?
         object_instance.save
       end
     end
@@ -198,7 +204,7 @@ module Sequel
     YAML_SEED_FILE_PATTERN = /\A(\d+)_.+\.(yml|yaml)\z/i.freeze
     JSON_SEED_FILE_PATTERN = /\A(\d+)_.+\.(json)\z/i.freeze
     SEED_SPLITTER = '_'.freeze
-    MINIMUM_TIMESTAMP = 20000101
+    MINIMUM_TIMESTAMP = 20_000_101
 
     Error = Seed::Error
 
@@ -212,7 +218,7 @@ module Sequel
           next unless SEED_FILE_PATTERN.match(file)
           return TimestampSeeder if file.split(SEED_SPLITTER, 2).first.to_i > MINIMUM_TIMESTAMP
         end
-        raise(Error, "seeder not available for files; please checked the directory")
+        fail(Error, 'seeder not available for files; please checked the directory')
       else
         self
       end
@@ -231,12 +237,12 @@ module Sequel
     attr_reader :table
 
     def initialize(db, directory, opts = {})
-      raise(Error, "Must supply a valid seed path") unless File.directory?(directory)
+      fail(Error, 'Must supply a valid seed path') unless File.directory?(directory)
       @db = db
       @directory = directory
       @allow_missing_seed_files = opts[:allow_missing_seed_files]
       @files = get_seed_files
-      schema, table = @db.send(:schema_and_table, opts[:table]  || self.class.const_get(:DEFAULT_SCHEMA_TABLE))
+      schema, table = @db.send(:schema_and_table, opts[:table] || self.class.const_get(:DEFAULT_SCHEMA_TABLE))
       @table = schema ? Sequel::SQL::QualifiedIdentifier.new(schema, table) : table
       @column = opts[:column] || self.class.const_get(:DEFAULT_SCHEMA_COLUMN)
       @ds = schema_dataset
@@ -245,11 +251,11 @@ module Sequel
 
     private
 
-    def checked_transaction(seed, &block)
+    def checked_transaction(_seed, &block)
       use_trans = if @use_transactions.nil?
-        @db.supports_transactional_ddl?
-      else
-        @use_transactions
+                    @db.supports_transactional_ddl?
+                  else
+                    @use_transactions
       end
 
       if use_trans
@@ -261,7 +267,11 @@ module Sequel
 
     def remove_seed_classes
       Seed::Base.descendants.each do |c|
-        Object.send(:remove_const, c.to_s) rescue nil
+        begin
+          Object.send(:remove_const, c.to_s)
+        rescue
+          nil
+        end
       end
       Seed::Base.descendants.clear
     end
@@ -317,9 +327,9 @@ module Sequel
 
     def get_applied_seeds
       am = ds.select_order_map(column)
-      missing_seed_files = am - files.map{|f| File.basename(f).downcase}
+      missing_seed_files = am - files.map { |f| File.basename(f).downcase }
       if missing_seed_files.length > 0 && !@allow_missing_seed_files
-        raise(Error, "Applied seed files not in file system: #{missing_seed_files.join(', ')}")
+        fail(Error, "Applied seed files not in file system: #{missing_seed_files.join(', ')}")
       end
       am
     end
@@ -330,7 +340,7 @@ module Sequel
         next unless SEED_FILE_PATTERN.match(file)
         files << File.join(directory, file)
       end
-      files.sort_by{|f| SEED_FILE_PATTERN.match(File.basename(f))[1].to_i}
+      files.sort_by { |f| SEED_FILE_PATTERN.match(File.basename(f))[1].to_i }
     end
 
     def get_seed_tuples
@@ -340,35 +350,31 @@ module Sequel
       files.each do |path|
         f = File.basename(path)
         fi = f.downcase
-        if !applied_seeds.include?(fi)
-          #begin
-          load(path) if RUBY_SEED_FILE_PATTERN.match(f)
-          create_yaml_seed(path) if YAML_SEED_FILE_PATTERN.match(f)
-          create_json_seed(path) if JSON_SEED_FILE_PATTERN.match(f)
-          #rescue Exception => e
-            #raise(Error, "error while processing seed file #{path}: #{e.inspect}")
-          #end
-          el = [ms.last, f]
-          next if ms.last.nil?
-          if ms.last < Seed::Base && !seeds.include?(el)
-            seeds << el
-          end
-        end
+        next if applied_seeds.include?(fi)
+        load(path) if RUBY_SEED_FILE_PATTERN.match(f)
+        create_yaml_seed(path) if YAML_SEED_FILE_PATTERN.match(f)
+        create_json_seed(path) if JSON_SEED_FILE_PATTERN.match(f)
+        # rescue Exception => e
+        # raise(Error, "error while processing seed file #{path}: #{e.inspect}")
+        # end
+        el = [ms.last, f]
+        next if ms.last.nil?
+        seeds << el if ms.last < Seed::Base && !seeds.include?(el)
       end
       seeds
     end
 
     def create_yaml_seed(path)
-      seed_descriptor = YAML::load(File.open(path))
+      seed_descriptor = YAML.load(File.open(path))
       seed = Class.new(Seed::Base)
-      seed.const_set "YAML_SEED", seed_descriptor
+      seed.const_set 'YAML_SEED', seed_descriptor
       seed.class_eval do
         include Seed::SeedDescriptor
 
         def run
-          seed_descriptor = self.class.const_get "YAML_SEED"
-          raise(Error, "YAML seed improperly defined") if seed_descriptor.nil?
-          self.apply_seed_descriptor(seed_descriptor)
+          seed_descriptor = self.class.const_get 'YAML_SEED'
+          fail(Error, 'YAML seed improperly defined') if seed_descriptor.nil?
+          apply_seed_descriptor(seed_descriptor)
         end
       end
       Seed::Base.inherited(seed) unless Seed::Base.descendants.include?(seed)
@@ -378,14 +384,14 @@ module Sequel
     def create_json_seed(path)
       seed_descriptor = JSON.parse(File.read(path))
       seed = Class.new(Seed::Base)
-      seed.const_set "JSON_SEED", seed_descriptor
+      seed.const_set 'JSON_SEED', seed_descriptor
       seed.class_eval do
         include Seed::SeedDescriptor
 
         def run
-          seed_descriptor = self.class.const_get "JSON_SEED"
-          raise(Error, "JSON seed improperly defined") if seed_descriptor.nil?
-          self.apply_seed_descriptor(seed_descriptor)
+          seed_descriptor = self.class.const_get 'JSON_SEED'
+          fail(Error, 'JSON seed improperly defined') if seed_descriptor.nil?
+          apply_seed_descriptor(seed_descriptor)
         end
       end
       Seed::Base.inherited(seed) unless Seed::Base.descendants.include?(seed)
@@ -396,9 +402,9 @@ module Sequel
       c = column
       ds = db.from(table)
       if !db.table_exists?(table)
-        db.create_table(table){String c, :primary_key => true}
+        db.create_table(table) { String c, primary_key: true }
       elsif !ds.columns.include?(c)
-        raise(Error, "Seeder table #{table} does not contain column #{c}")
+        fail(Error, "Seeder table #{table} does not contain column #{c}")
       end
       ds
     end

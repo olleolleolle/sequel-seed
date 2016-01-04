@@ -29,7 +29,7 @@ RSpec.configure do |config|
   DB = Sequel.sqlite
 
   DB.create_table(:spec_models) do
-    primary_key :id, :auto_increment => true
+    primary_key :id, auto_increment: true
     String :sentence
   end
 
