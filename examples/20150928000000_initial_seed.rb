@@ -1,4 +1,5 @@
-Sequel.seed(:development, :test) do # Applies only to "development" and "test" environments
+# Applies only to "development" and "test" environments
+Sequel.seed(:development, :test) do
   def run
     User.create \
       full_name: 'Richard Feynman',
@@ -8,7 +9,8 @@ Sequel.seed(:development, :test) do # Applies only to "development" and "test" e
   end
 end
 
-Sequel.seed do # Wildcard Seed; applies to every environment
+# Wildcard Seed; applies to every environment
+Sequel.seed do
   def run
     [
       ['USD', 'United States dollar'],
