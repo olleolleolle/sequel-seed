@@ -158,10 +158,11 @@ module Sequel
 
       def create_model(class_const, hash)
         object_instance = class_const.new
-        object_instance_attr = hash.each do |attr, value|
+        hash.each do |attr, value|
           object_instance.set(attr.to_sym => value)
         end
-        fail(Error, "Attempt to create invalid model instance of #{class_name}") unless object_instance.valid?
+        fail Error, 'Attempt to create invalid model instance of ' \
+                      "#{class_name}" unless object_instance.valid?
         object_instance.save
       end
     end
@@ -252,16 +253,18 @@ module Sequel
     private
 
     def checked_transaction(_seed, &block)
-      use_trans = if @use_transactions.nil?
-                    @db.supports_transactional_ddl?
-                  else
-                    @use_transactions
-      end
-
-      if use_trans
+      if use_transactions?
         db.transaction(&block)
       else
         yield
+      end
+    end
+
+    def use_transactions?
+      if @use_transactions.nil?
+        @db.supports_transactional_ddl?
+      else
+        @use_transactions
       end
     end
 
@@ -354,9 +357,6 @@ module Sequel
         load(path) if RUBY_SEED_FILE_PATTERN.match(f)
         create_yaml_seed(path) if YAML_SEED_FILE_PATTERN.match(f)
         create_json_seed(path) if JSON_SEED_FILE_PATTERN.match(f)
-        # rescue Exception => e
-        # raise(Error, "error while processing seed file #{path}: #{e.inspect}")
-        # end
         el = [ms.last, f]
         next if ms.last.nil?
         seeds << el if ms.last < Seed::Base && !seeds.include?(el)
